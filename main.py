@@ -2,10 +2,18 @@ import time
 import Astar
 from JS_handler import initialize_joystick, read_joystick_axes
 from modbus_server import store
+from ball_tracker import get_ball_position
 
 def cameraPos():
+    pos = get_ball_position()
+    if pos is None:
+        return (0, 0)  # fallback eller sist kjente posisjon
+    x, y, _ = pos
 
-    return (5, 5)
+    store.setValues(3, 0, [int(x)])
+    store.setValues(3, 1, [int(y)])
+
+    return (x, y)
 
 def reached_position(pos, target, deviation):
     dx = abs(pos[0] - target[0])
@@ -27,7 +35,7 @@ grid = [
 def run_astar_mode():
     position = cameraPos()
     destination = (0, 0)
-    deviation = 0.2
+    deviation = 0
 
     path = Astar.a_star(grid, position, destination)
     if not path:
@@ -59,6 +67,9 @@ def run_joystick_mode():
             print(f"Joystick: X={x:.2f}, Y={y:.2f}")
             store.setValues(3, 2, [int(x * 1000)])
             store.setValues(3, 3, [int(y * 1000)])
+
+            cameraPos()
+
             time.sleep(0.1)
     except KeyboardInterrupt:
         print("\nAvslutter joystick-modus...")
