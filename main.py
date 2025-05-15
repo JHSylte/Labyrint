@@ -5,7 +5,7 @@ from modbus_server import store
 from ball_tracker import get_ball_position
 
 def cameraPos():
-    pos = get_ball_position()
+    pos = get_ball_position(show=True)
     if pos is None:
         return (0, 0)  # fallback eller sist kjente posisjon
     x, y, _ = pos

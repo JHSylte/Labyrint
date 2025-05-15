@@ -2,34 +2,55 @@ import cv2
 import cvzone
 from cvzone.ColorModule import ColorFinder
 
+# Konfigurasjon
 RESOLUTION = (640, 480)
-hsvVals = {'hmin': 0, 'smin': 164, 'vmin': 139, 'hmax': 179, 'smax': 255, 'vmax': 218}
-centerPoint = (RESOLUTION[0] // 2, RESOLUTION[1] // 2, 1000)
-myColorFinder = ColorFinder(False)
+HSV_VALS = {'hmin': 0, 'smin': 164, 'vmin': 139, 'hmax': 179, 'smax': 255, 'vmax': 218}
+CENTER_POINT = (RESOLUTION[0] // 2, RESOLUTION[1] // 2, 1000)
 
-def init_camera():
-    camera = cv2.VideoCapture(0)
-    camera.set(3, RESOLUTION[0])
-    camera.set(4, RESOLUTION[1])
-    if not camera.isOpened():
-        raise RuntimeError("Kamera kunne ikke åpnes.")
-    return camera
+# Initialiser fargesøker
+colorFinder = ColorFinder(False)
 
-camera = init_camera()
+# Globalt kameraobjekt
+camera = None
 
-def get_ball_position():
-    ret, img = camera.read()
+def init_camera(camera_id=0, resolution=RESOLUTION):
+    global camera
+    if camera is not None:
+        return  # Kamera er allerede initialisert
+    cam = cv2.VideoCapture(camera_id)
+    cam.set(3, resolution[0])
+    cam.set(4, resolution[1])
+    if not cam.isOpened():
+        raise RuntimeError(f"Kamera på port {camera_id} kunne ikke åpnes.")
+    camera = cam
+
+# Kalles automatisk ved import
+init_camera()
+
+def get_ball_position(show=False):
+    """
+    Returnerer (x, y, z) for ballposisjon, eller None hvis ingen ball funnet.
+    """
+    if camera is None:
+        raise RuntimeError("Kamera ikke initialisert.")
+
+    ret, frame = camera.read()
     if not ret:
         return None
 
-    imgColor, mask = myColorFinder.update(img, hsvVals)
-    imgContour, contours = cvzone.findContours(img, mask)
-    cv2.imshow("Ballsporing", imgContour)
-    cv2.waitKey(1)
+    frame = cv2.GaussianBlur(frame, (7, 7), 0)
+    imgColor, mask = colorFinder.update(frame, HSV_VALS)
+    imgContour, contours = cvzone.findContours(frame, mask, minArea=100)
+
+    if show:
+        cv2.imshow("Ballsporing", imgContour)
+        cv2.imshow("Mask", mask)
+        cv2.waitKey(1)
 
     if contours:
-        x = contours[0]['center'][0] - centerPoint[0]
-        y = (RESOLUTION[1] - contours[0]['center'][1]) - centerPoint[1]
-        z = (contours[0]['area'] - centerPoint[2]) / 1000
+        x = contours[0]['center'][0] - CENTER_POINT[0]
+        y = (RESOLUTION[1] - contours[0]['center'][1]) - CENTER_POINT[1]
+        z = (contours[0]['area'] - CENTER_POINT[2]) / 1000
         return x, y, z
+
     return None
