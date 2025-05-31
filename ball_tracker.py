@@ -4,7 +4,7 @@ from cvzone.ColorModule import ColorFinder
 
 # Konfigurasjon
 RESOLUTION = (640, 480)
-HSV_VALS = {'hmin': 0, 'smin': 164, 'vmin': 139, 'hmax': 179, 'smax': 255, 'vmax': 218}
+HSV_VALS = {'hmin': 114, 'smin': 80, 'vmin': 130, 'hmax': 179, 'smax': 238, 'vmax': 255}
 CENTER_POINT = (RESOLUTION[0] // 2, RESOLUTION[1] // 2, 1000)
 
 # Initialiser fargesøker
