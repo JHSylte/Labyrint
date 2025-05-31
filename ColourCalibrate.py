@@ -59,12 +59,5 @@ while True:
     cv2.imshow("Kalibrering - Juster HSV verdier", imgContour)
     cv2.imshow("Mask (hvitt = valgt farge)", mask)
 
-    key = cv2.waitKey(1) & 0xFF
-    if key == ord('s'):
-        print("Lagre verdier:", myColorFinder.hsvVals)
-        break
-    elif key == ord('q'):
-        break
-
 camera.release()
 cv2.destroyAllWindows()
