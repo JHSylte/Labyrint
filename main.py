@@ -10,8 +10,10 @@ def cameraPos():
         return (0, 0)  # fallback eller sist kjente posisjon
     x, y, _ = pos
 
-    store.setValues(3, 0, [int(x)])
-    store.setValues(3, 1, [int(y)])
+    print(f"Position: x = {x}, y = {y}")
+
+    store.setValues(3, 0, [to_two_compliment(int(x))])
+    store.setValues(3, 1, [to_two_compliment(int(y))])
 
     return (x, y)
 
@@ -19,6 +21,11 @@ def reached_position(pos, target, deviation):
     dx = abs(pos[0] - target[0])
     dy = abs(pos[1] - target[1])
     return dx <= deviation and dy <= deviation
+
+def to_two_compliment(value):
+    if value < 0:
+       return 65535 + value
+    return value
 
 grid = [
     [1, 0, 1, 1, 1, 1, 0, 1, 1, 1],
@@ -49,11 +56,12 @@ def run_astar_mode():
         while not reached_position(cameraPos(), target, deviation):
             Astar_x= target[0]
             Astar_y= target[1]
+            time.sleep(0.1)
 
             store.setValues(3, 4, [Astar_x])
             store.setValues(3, 5, [Astar_y])
 
-            time.sleep(0.1)
+            #time.sleep(0.1)
         print(f"Nådd: {target}")
 
 def run_joystick_mode():
@@ -65,12 +73,15 @@ def run_joystick_mode():
         while True:
             x, y = read_joystick_axes(joystick)
             print(f"Joystick: X={x:.2f}, Y={y:.2f}")
-            store.setValues(3, 2, [int(x * 1000)])
-            store.setValues(3, 3, [int(y * 1000)])
+            int_x_axis = int(-(x * 100))
+            int_y_axis = int(y * 100)
 
+            store.setValues(3, 2, [to_two_compliment(int_x_axis)])
+            store.setValues(3, 3, [to_two_compliment(int_y_axis)])
+        
             cameraPos()
 
-            time.sleep(0.1)
+            #time.sleep(0.1)
     except KeyboardInterrupt:
         print("\nAvslutter joystick-modus...")
 
