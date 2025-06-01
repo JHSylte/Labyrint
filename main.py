@@ -5,7 +5,7 @@ from JS_handler import initialize_joystick, read_joystick_axes
 from modbus_server import store
 from ball_tracker import get_ball_position
 
-grid = np.loadtxt("labyrint_dilated.txt", dtype=int).tolist()
+grid = np.loadtxt("/home/gruppe5/Desktop/labyrint_dilated.txt", dtype=int).tolist()
 
 pmin_x = -195
 pmax_x = 171
