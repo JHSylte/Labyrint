@@ -13,7 +13,7 @@ def is_valid(grid, row, col):
     return 0 <= row < ROW and 0 <= col < COL
 
 def is_unblocked(grid, row, col):
-    return grid[row][col] == 1
+    return grid[row][col] == 0
 
 def is_destination(row, col, destination):
     return row == destination[0] and col == destination[1]
