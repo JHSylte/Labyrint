@@ -1,6 +1,7 @@
 import time
 import numpy as np
 import Astar
+import threading
 from JS_handler import initialize_joystick, read_joystick_axes
 from modbus_server import store
 from ball_tracker import get_ball_position
@@ -105,42 +106,51 @@ def run_joystick_mode():
     except KeyboardInterrupt:
         print("\nAvslutter joystick-modus...")
 
+#def main():
+#    mode = input("Velg modus (astar/js): ").strip().lower()
+#
+#    if mode == "astar":
+#        run_astar_mode()
+#    elif mode == "js":
+#        run_joystick_mode()
+#    else:
+#        print("Ugyldig modus. Bruk 'astar' eller 'js'.")
+
 def main():
-    mode = input("Velg modus (astar/js): ").strip().lower()
+    busy = False
+    previous_mode = None
+    stop_flag = threading.Event()  # hvis ikke definert tidligere
 
-    if mode == "astar":
-        run_astar_mode()
-    elif mode == "js":
-        run_joystick_mode()
-    else:
-        print("Ugyldig modus. Bruk 'astar' eller 'js'.")
+    def set_busy_false():
+        nonlocal busy
+        busy = False
 
-busy = False
+    while True:
+        try:
+            mode_val = store.getValues(3, 6, 1)[0]
 
-#while True:
-#    try:
-#        mode_val = store.getValues(3, 6, 1)[0]
-#
-#        if not busy and mode_val != previous_mode:
-#            stop_flag.set()  # avbryt nåværende modus (gjelder joystick)
-#            time.sleep(0.2)
-#            stop_flag.clear()
-#
-#            if mode_val == 1:
-#                print("→ Starter A*-modus (låser kontroll til ferdig)")
-#                busy = True
-#                threading.Thread(target=run_astar_mode, args=(lambda: busy := False,)).start()
-#            elif mode_val == 2:
-#                print("→ Starter joystick-modus")
-#                threading.Thread(target=run_joystick_mode).start()
-#            elif mode_val == 0:
-#                print("→ Idle")
-#            previous_mode = mode_val
-#
-#        time.sleep(0.5)
-#    except KeyboardInterrupt:
-#        print("Avslutter program...")
-#        break
+            if not busy and mode_val != previous_mode:
+                stop_flag.set()  # avbryt nåværende modus (gjelder joystick)
+                time.sleep(0.2)
+                stop_flag.clear()
+
+                if mode_val == 1:
+                    print("→ Starter A*-modus (låser kontroll til ferdig)")
+                    busy = True
+                    threading.Thread(target=run_astar_mode, args=(set_busy_false,)).start()
+                elif mode_val == 2:
+                    print("→ Starter joystick-modus")
+                    threading.Thread(target=run_joystick_mode).start()
+                elif mode_val == 0:
+                    print("→ Idle")
+                previous_mode = mode_val
+
+            time.sleep(0.5)
+        except KeyboardInterrupt:
+            print("Avslutter program...")
+            break
+
 
 if __name__ == "__main__":
     main()
+
