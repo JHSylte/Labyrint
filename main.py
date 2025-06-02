@@ -89,7 +89,7 @@ def run_astar_mode(done_callback=None, stop_flag=None):
             store.setValues(3, 5, [Astar_y])
 
             # Juster sleep her om nødvendig
-            time.sleep(0.05)
+            time.sleep(0.001)
 
     print("A*-mål nådd!")
     if done_callback:
@@ -117,7 +117,7 @@ def run_joystick_mode(stop_flag=None):
 
             cameraPos()
 
-            time.sleep(0.1)
+            time.sleep(0.001)
     except KeyboardInterrupt:
         print("\nAvslutter joystick-modus...")
 
@@ -125,7 +125,7 @@ def run_joystick_mode(stop_flag=None):
 def send_camera_position():
     while True:
         cameraPos()  # Henter og sender posisjon til PLS
-        time.sleep(0.1)
+        time.sleep(0.001)
 
 
 def main():
@@ -146,7 +146,7 @@ def main():
 
             if not busy and mode_val != previous_mode:
                 stop_flag.set()  # Avbryt eventuelle kjørende moduser
-                time.sleep(0.2)
+                time.sleep(0.01)
                 stop_flag.clear()
 
                 if mode_val == 1:
@@ -160,7 +160,7 @@ def main():
                     print("→ Idle")
                 previous_mode = mode_val
 
-            time.sleep(0.5)
+            time.sleep(0.001)
         except KeyboardInterrupt:
             print("Avslutter program...")
             break
