@@ -17,7 +17,8 @@ def init_camera(camera_id=0, resolution=RESOLUTION):
     global camera
     if camera is not None:
         return  # Kamera er allerede initialisert
-    cam = cv2.VideoCapture(camera_id)
+    cam = cv2.VideoCapture(camera_id, cv2.CAP_V4L2)
+    cam.set(cv2.CAP_PROP_BUFFERSIZE, 1)
     cam.set(3, resolution[0])
     cam.set(4, resolution[1])
     if not cam.isOpened():
@@ -42,10 +43,10 @@ def get_ball_position(show=False):
     imgColor, mask = colorFinder.update(frame, HSV_VALS)
     imgContour, contours = cvzone.findContours(frame, mask, minArea=100)
 
-    if show:
-        cv2.imshow("Ballsporing", imgContour)
-        cv2.imshow("Mask", mask)
-        cv2.waitKey(1)
+    #if show:
+    #    cv2.imshow("Ballsporing", imgContour)
+    #    cv2.imshow("Mask", mask)
+    #    cv2.waitKey(1)
 
     if contours:
         x = contours[0]['center'][0] - CENTER_POINT[0]
