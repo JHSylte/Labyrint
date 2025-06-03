@@ -145,30 +145,24 @@ def send_camera_position():
 
 
 def main():
-    busy = False
     previous_mode = None
     stop_flag = threading.Event()
 
     # Start kamera-posisjonstråd (daemon slik at programmet kan avslutte)
     threading.Thread(target=send_camera_position, daemon=True).start()
 
-    def set_busy_false():
-        nonlocal busy
-        busy = False
-
     while True:
         try:
             mode_val = store.getValues(3, 6, 1)[0]
 
-            if not busy and mode_val != previous_mode:
+            if mode_val != previous_mode:
                 stop_flag.set()  # Avbryt eventuelle kjørende moduser
                 time.sleep(0.01)
                 stop_flag.clear()
 
                 if mode_val == 1:
                     print("→ Starter A*-modus (låser kontroll til ferdig)")
-                    busy = True
-                    threading.Thread(target=run_astar_mode, args=(set_busy_false, stop_flag)).start()
+                    threading.Thread(target=run_astar_mode, args=(stop_flag,)).start()
                 elif mode_val == 2:
                     print("→ Starter joystick-modus")
                     threading.Thread(target=run_joystick_mode, args=(stop_flag,), daemon=True).start()
