@@ -32,7 +32,7 @@ def grid_to_pixel(gx, gy):
     return int(x), int(y)
 
 def cameraPos():
-    pos = get_ball_position(show=True)
+    pos = get_ball_position(show=False)
     if pos is None:
         return (0, 0)  # fallback eller sist kjente posisjon
     x, y, _ = pos
