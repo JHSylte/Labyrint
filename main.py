@@ -37,8 +37,6 @@ def cameraPos():
         return (0, 0)  # fallback eller sist kjente posisjon
     x, y, _ = pos
 
-    print(f"Position: x = {x}, y = {y}")
-
     store.setValues(3, 0, [to_two_compliment(int(x))])
     store.setValues(3, 1, [to_two_compliment(int(y))])
 
@@ -94,16 +92,19 @@ def run_astar_mode(stop_flag, done_callback=None):
                     done_callback()
                 return
 
-            pos = cameraPos()
-            print("posisjon:", pos)
+            # Hent ny posisjon i hver iterasjon
+            position = cameraPos()
 
             Astar_x, Astar_y = target
             pix_x, pix_y = grid_to_pixel(Astar_x, Astar_y)
 
+            print(f"target: {target}")
+            print(f"position: {position}")
+
             store.setValues(3, 4, [pix_x])
             store.setValues(3, 5, [pix_y])
 
-            if reached_position(pos, target, deviation):
+            if reached_position(position, target, deviation):
                 if inside_start_time is None:
                     inside_start_time = time.time()
                 elif time.time() - inside_start_time >= 1.0:
@@ -136,8 +137,6 @@ def run_joystick_mode(stop_flag=None):
 
             store.setValues(3, 2, [to_two_compliment(int_x_axis)])
             store.setValues(3, 3, [to_two_compliment(int_y_axis)])
-
-            cameraPos()
 
             time.sleep(0.001)
     except KeyboardInterrupt:
