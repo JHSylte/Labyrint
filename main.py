@@ -46,7 +46,6 @@ def cameraPos(timeout=0.5):
         return (0, 0)  # Fallback position
 
     x, y, _ = pos
-    print(f"Position: x = {x}, y = {y}")
     store.setValues(3, 0, [to_two_compliment(int(x))])
     store.setValues(3, 1, [to_two_compliment(int(y))])
     gx, gy = scale_to_grid(x, y)
@@ -78,8 +77,14 @@ def wait_until_reached(target, stop_flag, deviation=1, timeout=5):
             print("A* modus avbrutt (etter kamera)")
             return False
 
+        star_x = target[0]
+        star_y = target[1]
+
+        print(f"grid target: {star_x}, {star_y}")
+        print(f"grid position: {pos}")
+
         # Konverter mål til pikselkoordinater
-        pix_x, pix_y = grid_to_pixel(*target)
+        pix_x, pix_y = grid_to_pixel(star_x, star_y)
         store.setValues(3, 4, [pix_x])
         store.setValues(3, 5, [pix_y])
 
