@@ -64,6 +64,38 @@ def to_two_compliment(value):
         return 65535 + value
     return value
 
+def wait_until_reached(target, stop_flag, deviation=1, timeout=5):
+    start_time = time.time()
+    inside_start_time = None
+
+    while True:
+        if stop_flag and stop_flag.is_set():
+            print("A* modus avbrutt (i steg)")
+            return False
+
+        pos = cameraPos()
+        if stop_flag and stop_flag.is_set():
+            print("A* modus avbrutt (etter kamera)")
+            return False
+
+        # Konverter mål til pikselkoordinater
+        pix_x, pix_y = grid_to_pixel(*target)
+        store.setValues(3, 4, [pix_x])
+        store.setValues(3, 5, [pix_y])
+
+        if reached_position(pos, target, deviation):
+            if inside_start_time is None:
+                inside_start_time = time.time()
+            elif time.time() - inside_start_time >= 1.0:
+                return True
+        else:
+            inside_start_time = None
+
+        if time.time() - start_time > timeout:
+            print("Timeout – mål ikke nådd i tide.")
+            return False
+
+        time.sleep(0.01)
 
 def run_astar_mode(stop_flag, done_callback=None):
     position = cameraPos()
@@ -80,35 +112,18 @@ def run_astar_mode(stop_flag, done_callback=None):
     simplified_path = Astar.simplify_path(path)
 
     for target in simplified_path:
-        if stop_flag.is_set():  # Check before each target
+        if stop_flag.is_set():
             print("A* mode interrupted (before step)")
             if done_callback: done_callback()
             return
 
         print(f"Moving to: {target}")
-        inside_start_time = None
 
-        while not stop_flag.is_set():  # Exit loop immediately if stopped
-            pos = cameraPos()
-            if stop_flag.is_set():  # Check after cameraPos
-                print("A* mode interrupted (during step)")
-                if done_callback: done_callback()
-                return
-
-            # Convert target to pixel coordinates
-            pix_x, pix_y = grid_to_pixel(*target)
-            store.setValues(3, 4, [pix_x])
-            store.setValues(3, 5, [pix_y])
-
-            if reached_position(pos, target, deviation):
-                if inside_start_time is None:
-                    inside_start_time = time.time()
-                elif time.time() - inside_start_time >= 1.0:
-                    break  # Move to next target
-            else:
-                inside_start_time = None
-
-            time.sleep(0.01)
+        success = wait_until_reached(target, stop_flag, deviation)
+        if not success:
+            print("Bevegelse til målpunkt feilet eller avbrutt.")
+            if done_callback: done_callback()
+            return
 
     print("A* target reached!")
     if done_callback:
