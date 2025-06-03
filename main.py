@@ -25,6 +25,11 @@ def scale_to_grid(x, y):
 
     return grid_x, grid_y
 
+def grid_to_pixel(gx, gy):
+    # Skaler tilbake til pikselrom
+    x = gx / (94 - 1) * (pmax_x - pmin_x) + pmin_x
+    y = gy / (94 - 1) * (pmax_y - pmin_y) + pmin_y
+    return int(x), int(y)
 
 def cameraPos():
     pos = get_ball_position(show=True)
@@ -89,8 +94,10 @@ def run_astar_mode(done_callback=None, stop_flag=None):
             Astar_x = target[0]
             Astar_y = target[1]
 
-            store.setValues(3, 4, [Astar_x])
-            store.setValues(3, 5, [Astar_y])
+            pix_x, pix_y = grid_to_pixel(Astar_x, Astar_y)
+
+            store.setValues(3, 4, [pix_x])
+            store.setValues(3, 5, [pix_y])
 
             if reached_position(pos, target, deviation):
                 if inside_start_time is None:
@@ -99,10 +106,6 @@ def run_astar_mode(done_callback=None, stop_flag=None):
                     break  # Har vært innenfor deviation i minst 1 sekund
             else:
                 inside_start_time = None  # Reset hvis vi går ut av området
-
-            time.sleep(0.01)  # Juster hvis nødvendig
-
-    print("A*-mål nådd!")
 
     print("A*-mål nådd!")
     if done_callback:
