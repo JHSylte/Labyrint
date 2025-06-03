@@ -57,7 +57,7 @@ def to_two_compliment(value):
 def run_astar_mode(done_callback=None, stop_flag=None):
     position = cameraPos()
     destination = (3, 90)
-    deviation = 0
+    deviation = 1
 
     print("Starter fra:", position)
     print("Startverdi:", grid[position[1]][position[0]])
@@ -74,22 +74,35 @@ def run_astar_mode(done_callback=None, stop_flag=None):
 
     for target in simplified_path:
         print(f"Går mot: {target}")
-        while not reached_position(cameraPos(), target, deviation):
+
+        inside_start_time = None  # Tidsstempel når vi først er innenfor deviation
+
+        while True:
             if stop_flag and stop_flag.is_set():
                 print("A*-modus avbrutt")
                 if done_callback:
                     done_callback()
                 return
 
-            print("posisjon:", cameraPos())
+            pos = cameraPos()
+            print("posisjon:", pos)
             Astar_x = target[0]
             Astar_y = target[1]
 
             store.setValues(3, 4, [Astar_x])
             store.setValues(3, 5, [Astar_y])
 
-            # Juster sleep her om nødvendig
-            time.sleep(0.001)
+            if reached_position(pos, target, deviation):
+                if inside_start_time is None:
+                    inside_start_time = time.time()
+                elif time.time() - inside_start_time >= 1.0:
+                    break  # Har vært innenfor deviation i minst 1 sekund
+            else:
+                inside_start_time = None  # Reset hvis vi går ut av området
+
+            time.sleep(0.01)  # Juster hvis nødvendig
+
+    print("A*-mål nådd!")
 
     print("A*-mål nådd!")
     if done_callback:
