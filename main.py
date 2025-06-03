@@ -63,7 +63,7 @@ def to_two_compliment(value):
         return 65535 + value
     return value
 
-def wait_until_reached(target, stop_flag, deviation=1, timeout=5):
+def wait_until_reached(target, stop_flag, deviation=1, timeout=30):
     start_time = time.time()
     inside_start_time = None
 
