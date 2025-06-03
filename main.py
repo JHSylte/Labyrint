@@ -78,22 +78,26 @@ def run_astar_mode(done_callback=None, stop_flag=None):
     simplified_path = Astar.simplify_path(path)
 
     for target in simplified_path:
-        print(f"Går mot: {target}")
+        if stop_flag and stop_flag.is_set():
+            print("A*-modus avbrutt (før steg)")
+            if done_callback:
+                done_callback()
+            return
 
-        inside_start_time = None  # Tidsstempel når vi først er innenfor deviation
+        print(f"Går mot: {target}")
+        inside_start_time = None
 
         while True:
             if stop_flag and stop_flag.is_set():
-                print("A*-modus avbrutt")
+                print("A*-modus avbrutt (i steg)")
                 if done_callback:
                     done_callback()
                 return
 
             pos = cameraPos()
             print("posisjon:", pos)
-            Astar_x = target[0]
-            Astar_y = target[1]
 
+            Astar_x, Astar_y = target
             pix_x, pix_y = grid_to_pixel(Astar_x, Astar_y)
 
             store.setValues(3, 4, [pix_x])
@@ -103,9 +107,11 @@ def run_astar_mode(done_callback=None, stop_flag=None):
                 if inside_start_time is None:
                     inside_start_time = time.time()
                 elif time.time() - inside_start_time >= 1.0:
-                    break  # Har vært innenfor deviation i minst 1 sekund
+                    break
             else:
-                inside_start_time = None  # Reset hvis vi går ut av området
+                inside_start_time = None
+
+            time.sleep(0.01)  # Unngå busy-wait
 
     print("A*-mål nådd!")
     if done_callback:
