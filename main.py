@@ -31,24 +31,19 @@ def grid_to_pixel(gx, gy):
     y = gy / (94 - 1) * (pmax_y - pmin_y) + pmin_y
     return int(x), int(y)
 
-
-def cameraPos(timeout=0.5):
-    """Add timeout to avoid indefinite blocking"""
-    start_time = time.time()
-    pos = None
-    while time.time() - start_time < timeout:
-        pos = get_ball_position(show=False)
-        if pos is not None:
-            break
-        time.sleep(0.01)
-
+def cameraPos():
+    pos = get_ball_position(show=False)
     if pos is None:
-        return (0, 0)  # Fallback position
-
+        return (0, 0)  # fallback eller sist kjente posisjon
     x, y, _ = pos
+
+    print(f"Position: x = {x}, y = {y}")
+
     store.setValues(3, 0, [to_two_compliment(int(x))])
     store.setValues(3, 1, [to_two_compliment(int(y))])
+
     gx, gy = scale_to_grid(x, y)
+
     return (gx, gy)
 
 
@@ -63,74 +58,62 @@ def to_two_compliment(value):
         return 65535 + value
     return value
 
-def wait_until_reached(target, stop_flag, deviation=1, timeout=30):
-    start_time = time.time()
-    inside_start_time = None
-
-    while True:
-        if stop_flag and stop_flag.is_set():
-            print("A* modus avbrutt (i steg)")
-            return False
-
-        pos = cameraPos()
-        if stop_flag and stop_flag.is_set():
-            print("A* modus avbrutt (etter kamera)")
-            return False
-
-        star_x = target[0]
-        star_y = target[1]
-
-        print(f"grid target: {star_x}, {star_y}")
-        print(f"grid position: {pos}")
-
-        # Konverter mål til pikselkoordinater
-        pix_x, pix_y = grid_to_pixel(star_x, star_y)
-        store.setValues(3, 4, [pix_x])
-        store.setValues(3, 5, [pix_y])
-
-        if reached_position(pos, target, deviation):
-            if inside_start_time is None:
-                inside_start_time = time.time()
-            elif time.time() - inside_start_time >= 1.0:
-                return True
-        else:
-            inside_start_time = None
-
-        if time.time() - start_time > timeout:
-            print("Timeout – mål ikke nådd i tide.")
-            return False
-
-        time.sleep(0.01)
 
 def run_astar_mode(stop_flag, done_callback=None):
     position = cameraPos()
     destination = (3, 90)
     deviation = 1
-    print(f"Starting from: {position}, Target: {destination}")
+
+    print("Starter fra:", position)
+    print("Startverdi:", grid[position[1]][position[0]])
+    print("Sluttverdi:", grid[destination[1]][destination[0]])
 
     path = Astar.a_star(grid, position, destination)
     if not path:
-        print("No path found.")
-        if done_callback: done_callback()
+        print("Ingen rute funnet.")
+        if done_callback:
+            done_callback()
         return
 
     simplified_path = Astar.simplify_path(path)
 
     for target in simplified_path:
-        if stop_flag.is_set():
-            print("A* mode interrupted (before step)")
-            if done_callback: done_callback()
+        if stop_flag and stop_flag.is_set():
+            print("A*-modus avbrutt (før steg)")
+            if done_callback:
+                done_callback()
             return
 
-        print(f"Moving to: {target}")
+        print(f"Går mot: {target}")
+        inside_start_time = None
 
-        success = wait_until_reached(target, stop_flag, deviation)
-        if not success:
-            print("Bevegelse til målpunkt feilet eller avbrutt.")
-            if done_callback: done_callback()
-            return
+        while True:
+            if stop_flag and stop_flag.is_set():
+                print("A*-modus avbrutt (i steg)")
+                if done_callback:
+                    done_callback()
+                return
 
-    print("A* target reached!")
+            pos = cameraPos()
+            print("posisjon:", pos)
+
+            Astar_x, Astar_y = target
+            pix_x, pix_y = grid_to_pixel(Astar_x, Astar_y)
+
+            store.setValues(3, 4, [pix_x])
+            store.setValues(3, 5, [pix_y])
+
+            if reached_position(pos, target, deviation):
+                if inside_start_time is None:
+                    inside_start_time = time.time()
+                elif time.time() - inside_start_time >= 1.0:
+                    break
+            else:
+                inside_start_time = None
+
+            time.sleep(0.01)  # Unngå busy-wait
+
+    print("A*-mål nådd!")
     if done_callback:
         done_callback()
 
