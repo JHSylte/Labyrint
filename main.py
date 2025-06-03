@@ -59,7 +59,7 @@ def to_two_compliment(value):
     return value
 
 
-def run_astar_mode(done_callback=None, stop_flag=None):
+def run_astar_mode(stop_flag, done_callback=None):
     position = cameraPos()
     destination = (3, 90)
     deviation = 1
@@ -175,7 +175,7 @@ def main():
 
                 if mode_val == 1:
                     print("→ Starter A*-modus")
-                    current_thread = threading.Thread(target=run_astar_mode, args=(None, stop_flag))
+                    current_thread = threading.Thread(target=run_astar_mode, args=(stop_flag,))
                     current_thread.start()
                 elif mode_val == 2:
                     print("→ Starter joystick-modus")
