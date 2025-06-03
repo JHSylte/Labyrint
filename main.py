@@ -147,6 +147,7 @@ def send_camera_position():
 def main():
     previous_mode = None
     stop_flag = threading.Event()
+    current_thread = None  # Holder referanse til aktiv modus-tråd
 
     # Start kamera-posisjonstråd (daemon slik at programmet kan avslutte)
     threading.Thread(target=send_camera_position, daemon=True).start()
@@ -156,25 +157,36 @@ def main():
             mode_val = store.getValues(3, 6, 1)[0]
 
             if mode_val != previous_mode:
-                stop_flag.set()  # Avbryt eventuelle kjørende moduser
-                time.sleep(0.01)
-                stop_flag.clear()
+                print(f"→ Endrer modus til {mode_val}")
+                stop_flag.set()  # Be eksisterende modus om å stoppe
+
+                # Vent på at tidligere tråd avsluttes
+                if current_thread is not None:
+                    current_thread.join()
+                    current_thread = None
+
+                stop_flag.clear()  # Nullstill flagget etter at gammel tråd er ferdig
 
                 if mode_val == 1:
-                    print("→ Starter A*-modus (låser kontroll til ferdig)")
-                    threading.Thread(target=run_astar_mode, args=(stop_flag,)).start()
+                    print("→ Starter A*-modus")
+                    current_thread = threading.Thread(target=run_astar_mode, args=(None, stop_flag))
+                    current_thread.start()
                 elif mode_val == 2:
                     print("→ Starter joystick-modus")
-                    threading.Thread(target=run_joystick_mode, args=(stop_flag,), daemon=True).start()
+                    current_thread = threading.Thread(target=run_joystick_mode, args=(stop_flag,), daemon=True)
+                    current_thread.start()
                 elif mode_val == 0:
-                    print("→ Idle")
+                    print("→ Idle (ingen aktiv styring)")
+
                 previous_mode = mode_val
 
             time.sleep(0.001)
         except KeyboardInterrupt:
             print("Avslutter program...")
+            stop_flag.set()
+            if current_thread is not None:
+                current_thread.join()
             break
-
 
 if __name__ == "__main__":
     main()
