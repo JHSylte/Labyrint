@@ -13,20 +13,16 @@ pmax_x = 171
 pmin_y = -168
 pmax_y = 204
 
+modbus_lock = threading.Lock()
 
 def scale_to_grid(x, y):
-    # Normaliser og skaler til grid
     grid_x = (x - pmin_x) / (pmax_x - pmin_x) * (94 - 1)
     grid_y = (y - pmin_y) / (pmax_y - pmin_y) * (94 - 1)
-
-    # Klipp verdiene slik at de alltid er innenfor gyldig indeks
     grid_x = max(0, min(94 - 1, int(round(grid_x))))
     grid_y = max(0, min(94 - 1, int(round(grid_y))))
-
     return grid_x, grid_y
 
 def grid_to_pixel(gx, gy):
-    # Skaler tilbake til pikselrom
     x = gx / (94 - 1) * (pmax_x - pmin_x) + pmin_x
     y = gy / (94 - 1) * (pmax_y - pmin_y) + pmin_y
     return int(x), int(y)
@@ -34,28 +30,25 @@ def grid_to_pixel(gx, gy):
 def cameraPos():
     pos = get_ball_position(show=False)
     if pos is None:
-        return (0, 0)  # fallback eller sist kjente posisjon
+        return (0, 0)
     x, y, _ = pos
 
-    store.setValues(3, 0, [to_two_compliment(int(x))])
-    store.setValues(3, 1, [to_two_compliment(int(y))])
+    with modbus_lock:
+        store.setValues(3, 0, [to_two_compliment(int(x))])
+        store.setValues(3, 1, [to_two_compliment(int(y))])
 
     gx, gy = scale_to_grid(x, y)
-
     return (gx, gy)
-
 
 def reached_position(pos, target, deviation):
     dx = abs(pos[0] - target[0])
     dy = abs(pos[1] - target[1])
     return dx <= deviation and dy <= deviation
 
-
 def to_two_compliment(value):
     if value < 0:
         return 65535 + value
     return value
-
 
 def run_astar_mode(stop_flag, done_callback=None):
     position = cameraPos()
@@ -92,17 +85,16 @@ def run_astar_mode(stop_flag, done_callback=None):
                     done_callback()
                 return
 
-            # Hent ny posisjon i hver iterasjon
             position = cameraPos()
-
             Astar_x, Astar_y = target
             pix_x, pix_y = grid_to_pixel(Astar_x, Astar_y)
 
             print(f"target: {target}")
             print(f"position: {position}")
 
-            store.setValues(3, 4, [pix_x])
-            store.setValues(3, 5, [pix_y])
+            with modbus_lock:
+                store.setValues(3, 4, [pix_x])
+                store.setValues(3, 5, [pix_y])
 
             if reached_position(position, target, deviation):
                 if inside_start_time is None:
@@ -112,12 +104,11 @@ def run_astar_mode(stop_flag, done_callback=None):
             else:
                 inside_start_time = None
 
-            time.sleep(0.01)  # Unngå busy-wait
+            time.sleep(0.01)
 
     print("A*-mål nådd!")
     if done_callback:
         done_callback()
-
 
 def run_joystick_mode(stop_flag=None):
     joystick = initialize_joystick()
@@ -135,26 +126,24 @@ def run_joystick_mode(stop_flag=None):
             int_x_axis = int(-(x * 100))
             int_y_axis = int(y * 100)
 
-            store.setValues(3, 2, [to_two_compliment(int_x_axis)])
-            store.setValues(3, 3, [to_two_compliment(int_y_axis)])
+            with modbus_lock:
+                store.setValues(3, 2, [to_two_compliment(int_x_axis)])
+                store.setValues(3, 3, [to_two_compliment(int_y_axis)])
 
             time.sleep(0.001)
     except KeyboardInterrupt:
         print("\nAvslutter joystick-modus...")
 
-
 def send_camera_position():
     while True:
-        cameraPos()  # Henter og sender posisjon til PLS
-        time.sleep(0.001)
-
+        cameraPos()
+        time.sleep(0.02)  # 📉 Roligere oppdatering for stabilitet
 
 def main():
     previous_mode = None
     stop_flag = threading.Event()
-    current_thread = None  # Holder referanse til aktiv modus-tråd
+    current_thread = None
 
-    # Start kamera-posisjonstråd (daemon slik at programmet kan avslutte)
     threading.Thread(target=send_camera_position, daemon=True).start()
 
     while True:
@@ -163,14 +152,13 @@ def main():
 
             if mode_val != previous_mode:
                 print(f"→ Endrer modus til {mode_val}")
-                stop_flag.set()  # Be eksisterende modus om å stoppe
+                stop_flag.set()
 
-                # Vent på at tidligere tråd avsluttes
                 if current_thread is not None:
                     current_thread.join()
                     current_thread = None
 
-                stop_flag.clear()  # Nullstill flagget etter at gammel tråd er ferdig
+                stop_flag.clear()
 
                 if mode_val == 1:
                     print("→ Starter A*-modus")
