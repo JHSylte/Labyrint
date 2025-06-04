@@ -91,6 +91,7 @@ def run_astar_mode(stop_flag, done_callback=None):
 
             print(f"target: {target}")
             print(f"position: {position}")
+            print(f"pixel target: ({pix_x},{pix_y}")
 
             with modbus_lock:
                 store.setValues(3, 4, [to_two_compliment(pix_x)])
