@@ -93,8 +93,8 @@ def run_astar_mode(stop_flag, done_callback=None):
             print(f"position: {position}")
 
             with modbus_lock:
-                store.setValues(3, 4, [pix_x])
-                store.setValues(3, 5, [pix_y])
+                store.setValues(3, 4, [to_two_compliment(pix_x)])
+                store.setValues(3, 5, [to_two_compliment(pix_y)])
 
             if reached_position(position, target, deviation):
                 if inside_start_time is None:
@@ -130,7 +130,7 @@ def run_joystick_mode(stop_flag=None):
                 store.setValues(3, 2, [to_two_compliment(int_x_axis)])
                 store.setValues(3, 3, [to_two_compliment(int_y_axis)])
 
-            time.sleep(0.001)
+            time.sleep(0.01)
     except KeyboardInterrupt:
         print("\nAvslutter joystick-modus...")
 
